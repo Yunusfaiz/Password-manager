@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
 import pyperclip
+import json
 from click import command
 
 FONT_NAME = 'Courier'
@@ -26,25 +27,47 @@ def generate_password():
     password_entry.insert(0, password)
 
 
+
+# ---------------------------- FIND PASSWORD ------------------------------- #
+def find_password():
+    website = website_entry.get()
+    with open('data.json', 'r') as file:
+        data = json.load(file)
+
+    if website in data.keys():
+        messagebox.showinfo(title='info', message=f"Email: {data[website]['email']}\npassword: {data[website]['password']}")
+    else:
+        messagebox.showerror(title='Error', message='No details for the website exists')
+
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save():
     website = website_entry.get()
     email = username_entry.get()
     password = password_entry.get()
 
-    data = f"{website} | {email} | {password}\n"
+    new_data = {
+        website: {
+            'email': email,
+            'password': password
+        }
+    }
 
     if len(website) == 0 or len(email) == 0 or len(password) == 0:
         messagebox.showinfo(title="oops!", message="Please Fill in All fields.")
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"Your Details are:\n Email: {email}\n password: {password}\n Is this Right?")
+        try:
+            with open('data.json', 'r') as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            with open('data.json', 'w') as file:
+                json.dump(new_data, file, indent=4)
+        else:
+            data.update(new_data)
 
-        if is_ok:
-            with open('data.txt', 'a') as file:
-                file.write(data)
-
+            with open('data.json', 'w') as file:
+                json.dump(data, file, indent=4)
+        finally:
             website_entry.delete(0, 'end')
-            username_entry.delete(0, 'end')
             password_entry.delete(0, 'end')
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -65,6 +88,9 @@ website_label.grid(row=1, column=0)
 website_entry = Entry(width=40)
 website_entry.grid(row=1, column=1, columnspan=2)
 
+search_button = Button(text='Search', width=17, command=find_password)
+search_button.grid(row=1, column=2)
+
 username_label = Label(text='Email/Username:', font=(FONT_NAME, 10, 'bold'))
 username_label.grid(row=2, column=0)
 
@@ -77,7 +103,7 @@ password_label.grid(row=3, column=0)
 password_entry = Entry(width=40)
 password_entry.grid(row=3, column=1, columnspan=2)
 
-generate_button = Button(text='Generate Password', command=generate_password)
+generate_button = Button(text='Generate Password', command=generate_password, width=17)
 generate_button.grid(row=3, column=2)
 #
 add_button = Button(text='Add', width=36, command=save)
